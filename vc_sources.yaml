@@ -1,0 +1,57 @@
+vc_sources:
+  # Example: Well-known active VCs (with news pages)
+  - name: "Accel India"
+    url: "https://www.accel.com/news"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-item a", ".portfolio-news a", ".insights a"]
+    max_articles: 100
+
+  - name: "Peak XV Partners (formerly Sequoia Capital India)"
+    url: "https://peakxv.com/newsroom"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".newsroom-item a", ".insights a"]
+    max_articles: 100
+
+  - name: "Kalaari Capital"
+    url: "https://kalaari.com/news/"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-list a"]
+    max_articles: 100
+
+  - name: "Matrix Partners India (Z47)"
+    url: "https://matrixpartners.in/insights/"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-list a"]
+    max_articles: 100
+
+  - name: "Nexus Venture Partners"
+    url: "https://www.nexusvp.com/insights"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-list a"]
+    max_articles: 100
+
+  - name: "Blume Ventures"
+    url: "https://blume.vc/blog"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-list a"]
+    max_articles: 100
+
+  - name: "Chiratae Ventures"
+    url: "https://www.chiratae.com/newsroom"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-list a"]
+    max_articles: 100
+
+  - name: "ah! Ventures"
+    url: "https://ahventures.in/blog/"
+    keywords: ["news", "insights", "portfolio", "memo", "thesis", "investment"]
+    exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
+    article_selectors: [".news-list a"]
+    max_articles: 100
