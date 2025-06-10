@@ -7,7 +7,9 @@ import logging
 from urllib.parse import urljoin, urlparse
 from typing import List, Dict, Set
 import re
-from vc_config import VC_CONFIGS, USER_AGENTS
+from config.vc_config import VC_CONFIGS, USER_AGENTS
+from .notion_integration import NotionVCDatabase
+import hashlib
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,10 +34,13 @@ class MultiVCScraper:
     
     def make_request(self, url: str) -> requests.Response:
         """Make a request with random delay and headers"""
+        # Clean the URL first - strip whitespace and newlines
+        clean_url = url.strip().replace('\n', '').replace('\r', '')
+        
         headers = self.get_random_headers()
         
         try:
-            response = self.session.get(url, headers=headers, timeout=10)
+            response = self.session.get(clean_url, headers=headers, timeout=10)
             response.raise_for_status()
             
             # Random delay between requests
@@ -44,7 +49,7 @@ class MultiVCScraper:
             
             return response
         except requests.RequestException as e:
-            logger.error(f"Error fetching {url}: {e}")
+            logger.error(f"Error fetching {clean_url}: {e}")
             return None
     
     def extract_links_from_sitemap(self, vc_key: str, vc_config: Dict) -> Set[str]:
@@ -65,15 +70,17 @@ class MultiVCScraper:
                     
                 if 'xml' in sitemap_url:
                     soup = BeautifulSoup(response.content, 'xml')
-                    urls = [loc.text for loc in soup.find_all('loc')]
+                    urls = [loc.text.strip() for loc in soup.find_all('loc')]
                 else:  # robots.txt
                     content = response.text
                     sitemap_matches = re.findall(r'Sitemap:\s*(.*)', content)
-                    urls = sitemap_matches
+                    urls = [url.strip() for url in sitemap_matches]
                 
                 for url in urls:
-                    if any(pattern in url for pattern in vc_config['search_patterns']):
-                        relevant_links.add(url)
+                    # Clean URL and check patterns
+                    clean_url = url.strip().replace('\n', '').replace('\r', '')
+                    if any(pattern in clean_url for pattern in vc_config['search_patterns']):
+                        relevant_links.add(clean_url)
                         
             except Exception as e:
                 logger.warning(f"Could not process {sitemap_url}: {e}")
@@ -93,13 +100,16 @@ class MultiVCScraper:
         
         # Find all links on the page
         for link in soup.find_all('a', href=True):
-            href = link['href']
+            href = link['href'].strip()
             full_url = urljoin(url, href)
             
+            # Clean the URL
+            clean_url = full_url.strip().replace('\n', '').replace('\r', '')
+            
             # Check if link matches search patterns
-            if any(pattern in full_url for pattern in vc_config['search_patterns']):
-                if urlparse(full_url).netloc == urlparse(vc_config['base_url']).netloc:
-                    links.add(full_url)
+            if any(pattern in clean_url for pattern in vc_config['search_patterns']):
+                if urlparse(clean_url).netloc == urlparse(vc_config['base_url']).netloc:
+                    links.add(clean_url)
         
         return links
     
@@ -268,6 +278,64 @@ class MultiVCScraper:
                 writer.writerow(article)
         
         logger.info(f"Saved {len(articles)} articles to {filename}")
+
+class EnhancedMultiVCScraper(MultiVCScraper):
+    def __init__(self, notion_token: str = None, database_id: str = None):
+        super().__init__()
+        self.notion_db = NotionVCDatabase(notion_token, database_id) if notion_token else None
+        
+    def _generate_content_hash(self, article: Dict) -> str:
+        """Generate hash for article content"""
+        content = f"{article.get('title', '')}{article.get('content', '')}{article.get('url', '')}"
+        return hashlib.md5(content.encode()).hexdigest()
+        
+    def process_and_store_articles(self, articles: List[Dict]) -> Dict:
+        """Process articles and store new ones in Notion"""
+        stats = {"new": 0, "existing": 0, "errors": 0}
+        
+        if not self.notion_db:
+            logger.warning("Notion database not configured, skipping storage")
+            return stats
+        
+        for article in articles:
+            try:
+                content_hash = self._generate_content_hash(article)
+                
+                if not self.notion_db.check_article_exists(content_hash):
+                    # New article - store in Notion
+                    page_id = self.notion_db.create_article_page(article)
+                    logger.info(f"Stored new article: {article.get('title', 'Untitled')[:50]}...")
+                    stats["new"] += 1
+                else:
+                    logger.info(f"Article already exists: {article.get('title', 'Untitled')[:50]}...")
+                    stats["existing"] += 1
+                    
+            except Exception as e:
+                logger.error(f"Error processing article {article.get('title', 'Untitled')}: {e}")
+                stats["errors"] += 1
+                
+        return stats
+        
+    def sync_with_notion(self) -> Dict:
+        """Main method to scrape and sync with Notion"""
+        logger.info("Starting VC article sync with Notion...")
+        
+        # Scrape all VCs
+        all_articles = []
+        for vc_config in self.vc_configs:
+            try:
+                logger.info(f"Scraping {vc_config['name']}...")
+                articles = self.scrape_vc_articles(vc_config)
+                all_articles.extend(articles)
+                logger.info(f"Found {len(articles)} articles from {vc_config['name']}")
+            except Exception as e:
+                logger.error(f"Error scraping {vc_config['name']}: {e}")
+        
+        # Process and store in Notion
+        stats = self.process_and_store_articles(all_articles)
+        
+        logger.info(f"Sync complete: {stats['new']} new, {stats['existing']} existing, {stats['errors']} errors")
+        return stats
 
 def main():
     """Main function to run the scraper"""

@@ -55,3 +55,20 @@ vc_sources:
     exclude_keywords: ["contact", "team", "about", "careers", "privacy", "cookie"]
     article_selectors: [".news-list a"]
     max_articles: 100
+
+notion:
+  enabled: true
+  database_schema:
+    title_field: "Title"
+    vc_field: "VC Firm"
+    url_field: "URL"
+    content_field: "Full Content"
+    themes_field: "Investment Theme"
+    
+monitoring:
+  intervals:
+    daily_scan: "09:00"
+    evening_scan: "17:00"
+  notification:
+    slack_webhook: "${SLACK_WEBHOOK_URL}"
+    email_enabled: false

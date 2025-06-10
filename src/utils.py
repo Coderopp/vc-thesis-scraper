@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import logging
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -124,3 +125,43 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text).strip()
     
     return text
+
+def extract_investment_metadata(content: str) -> Dict:
+    """Extract structured metadata from investment content"""
+    import re
+    
+    metadata = {
+        'companies': [],
+        'themes': [],
+        'funding_round': None,
+        'investment_amount': None
+    }
+    
+    # Extract company names (often capitalized or in quotes)
+    company_patterns = [
+        r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b',  # Capitalized names
+        r'"([^"]+)"',  # Quoted names
+        r'investment in ([^,\.]+)',  # "investment in X"
+    ]
+    
+    # Extract funding round info
+    round_patterns = [
+        r'(Seed|Series [A-Z]|Pre-seed)',
+        r'\$([0-9]+(?:\.[0-9]+)?[MB])',  # Dollar amounts
+    ]
+    
+    # Extract themes
+    theme_keywords = {
+        'AI/ML': ['artificial intelligence', 'machine learning', 'AI', 'ML'],
+        'Fintech': ['fintech', 'financial', 'payments', 'banking'],
+        'Healthcare': ['healthcare', 'health', 'medical', 'biotech'],
+        'SaaS': ['saas', 'software as a service', 'cloud'],
+        'E-commerce': ['ecommerce', 'e-commerce', 'retail']
+    }
+    
+    content_lower = content.lower()
+    for theme, keywords in theme_keywords.items():
+        if any(keyword in content_lower for keyword in keywords):
+            metadata['themes'].append(theme)
+    
+    return metadata

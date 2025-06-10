@@ -123,3 +123,14 @@ USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0'
 ]
+
+
+def load_vc_configs():
+    """Load VC configurations and return as a list of dictionaries"""
+    vc_list = []
+    for vc_key, vc_config in VC_CONFIGS.items():
+        # Add the key to the config for easier reference
+        config_with_key = vc_config.copy()
+        config_with_key['key'] = vc_key
+        vc_list.append(config_with_key)
+    return vc_list
